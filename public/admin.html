@@ -6,22 +6,130 @@
     <title>إدارة الطلاب - لوحة التحكم</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Tahoma', Arial, sans-serif; background: #f0f2f5; padding: 20px; }
-        .header { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        body {
+            font-family: 'Cairo', 'Tahoma', Arial, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
         .container { max-width: 1400px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: center; }
-        th { background: #667eea; color: white; }
-        input, select { padding: 8px; border-radius: 8px; border: 1px solid #ccc; width: 80px; text-align: center; }
-        .save-btn { background: #48bb78; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
-        .edit-btn { background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; margin: 2px; }
-        .settings-panel { background: #e9ecef; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
-        .settings-panel input { width: 100px; }
-        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab { padding: 10px 20px; background: #ddd; border-radius: 10px; cursor: pointer; }
-        .tab.active { background: #667eea; color: white; }
-        .notify-btn { background: #e53e3e; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-danger { background: #e53e3e; color: white; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn-warning { background: #ed8936; color: white; }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #667eea;
+            color: white;
+        }
+        .scores-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+        }
+        .score-item input {
+            width: 60px;
+            padding: 5px;
+            text-align: center;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        @media (max-width: 768px) {
+            th, td { font-size: 12px; padding: 8px; }
+            .score-item input { width: 45px; }
+        }
     </style>
 </head>
 <body>
@@ -29,58 +137,108 @@
     <div class="header">
         <h1>📝 إدارة الطلاب والنتائج</h1>
         <div>
-            <button class="notify-btn" onclick="openNotifyModal()">🔔 إرسال إشعار</button>
-            <button onclick="logout()" style="background:#e53e3e;color:white;border:none;padding:10px 20px;border-radius:8px;margin-right:10px;">🚪 خروج</button>
+            <button class="btn btn-primary" onclick="openAddModal()">➕ إضافة طالب جديد</button>
+            <button class="btn btn-warning" onclick="openNotifyModal()">🔔 إرسال إشعار</button>
+            <button class="btn btn-danger" onclick="logout()">🚪 تسجيل خروج</button>
         </div>
     </div>
     
-    <div class="nav-tabs">
+    <div class="tabs">
         <div class="tab active" onclick="showTab('students')">📚 الطلاب والنتائج</div>
-        <div class="tab" onclick="showTab('settings')">⚙️ إعدادات المواد والترم</div>
+        <div class="tab" onclick="showTab('settings')">⚙️ إعدادات المواد</div>
     </div>
     
+    <!-- تبويب الطلاب -->
     <div id="studentsTab" class="card">
         <h2>📋 قائمة الطلاب</h2>
         <div style="overflow-x: auto;">
             <table id="studentsTable">
-                <thead><tr><th>رقم الجلوس</th><th>الاسم</th><th>المدرسة</th><th>المواد</th><th>المجموع</th><th>الإجراءات</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>رقم الجلوس</th>
+                        <th>الاسم</th>
+                        <th>المدرسة</th>
+                        <th>الدرجات</th>
+                        <th>المجموع</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
     
+    <!-- تبويب الإعدادات -->
     <div id="settingsTab" class="card" style="display:none;">
         <h2>⚙️ إعدادات النظام</h2>
-        <div class="settings-panel">
-            <h3>الفصل الدراسي</h3>
+        <div class="form-group">
+            <label>الفصل الدراسي</label>
             <select id="termSelect">
                 <option value="first">الأول</option>
                 <option value="second">الثاني</option>
             </select>
-            <button onclick="saveSettings()" class="save-btn" style="margin-top:10px;">💾 حفظ الإعدادات</button>
         </div>
-        <div class="settings-panel">
-            <h3>المواد الأساسية (تضاف للمجموع)</h3>
-            <div id="mainSubjectsList"></div>
-            <button onclick="addSubject('main')">+ إضافة مادة أساسية</button>
+        <h3>المواد الأساسية (تضاف للمجموع)</h3>
+        <div id="mainSubjectsList"></div>
+        <button class="btn btn-primary" onclick="addSubject('main')">+ إضافة مادة أساسية</button>
+        
+        <h3 style="margin-top:20px;">المواد الإضافية (لا تضاف للمجموع)</h3>
+        <div id="extraSubjectsList"></div>
+        <button class="btn btn-primary" onclick="addSubject('extra')">+ إضافة مادة إضافية</button>
+        
+        <button class="btn btn-success" onclick="saveSettings()" style="margin-top:20px;">💾 حفظ الإعدادات</button>
+    </div>
+</div>
+
+<!-- مودال إضافة/تعديل طالب -->
+<div id="studentModal" class="modal">
+    <div class="modal-content">
+        <h2 id="modalTitle">إضافة طالب جديد</h2>
+        <div class="form-group">
+            <label>رقم الجلوس *</label>
+            <input type="text" id="editSeat" placeholder="أدخل رقم الجلوس">
         </div>
-        <div class="settings-panel">
-            <h3>المواد الإضافية (لا تضاف للمجموع)</h3>
-            <div id="extraSubjectsList"></div>
-            <button onclick="addSubject('extra')">+ إضافة مادة إضافية</button>
+        <div class="form-group">
+            <label>اسم الطالب *</label>
+            <input type="text" id="editName" placeholder="أدخل اسم الطالب">
+        </div>
+        <div class="form-group">
+            <label>المدرسة</label>
+            <input type="text" id="editSchool" placeholder="اسم المدرسة">
+        </div>
+        <div class="form-group">
+            <label>الإدارة التعليمية</label>
+            <input type="text" id="editAdmin" placeholder="الإدارة التعليمية">
+        </div>
+        <h3>الدرجات</h3>
+        <div id="scoresContainer"></div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-success" onclick="saveStudent()">💾 حفظ</button>
+            <button class="btn btn-danger" onclick="closeModal()">إلغاء</button>
         </div>
     </div>
 </div>
 
 <!-- مودال الإشعارات -->
-<div id="notifyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;">
-    <div style="background:white; padding:30px; border-radius:20px; width:400px;">
-        <h3>إرسال إشعار لجميع المستخدمين</h3>
-        <input type="text" id="notifyTitle" placeholder="العنوان" style="width:100%; padding:10px; margin:10px 0;">
-        <textarea id="notifyBody" placeholder="نص الإشعار" style="width:100%; padding:10px; margin:10px 0;"></textarea>
-        <input type="text" id="notifyUrl" placeholder="رابط الصفحة (اختياري)" style="width:100%; padding:10px; margin:10px 0;">
-        <button onclick="sendNotification()" class="save-btn">إرسال</button>
-        <button onclick="closeNotifyModal()" style="margin-right:10px;">إلغاء</button>
+<div id="notifyModal" class="modal">
+    <div class="modal-content">
+        <h2>🔔 إرسال إشعار لجميع المستخدمين</h2>
+        <div class="form-group">
+            <label>عنوان الإشعار</label>
+            <input type="text" id="notifyTitle" placeholder="مثال: ظهور النتائج">
+        </div>
+        <div class="form-group">
+            <label>نص الإشعار</label>
+            <textarea id="notifyBody" rows="3" placeholder="نص الإشعار"></textarea>
+        </div>
+        <div class="form-group">
+            <label>رابط الصفحة (اختياري)</label>
+            <input type="text" id="notifyUrl" placeholder="https://example.com">
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-success" onclick="sendNotification()">إرسال</button>
+            <button class="btn btn-danger" onclick="closeNotifyModal()">إلغاء</button>
+        </div>
     </div>
 </div>
 
@@ -93,8 +251,10 @@
         const token = localStorage.getItem('token');
         if (!token) { window.location.href = '/login.html'; return; }
         
-        const res = await fetch('/api/admin/students', { headers: { 'Authorization': `Bearer ${token}` } });
-        const data = await res.json();
+        const response = await fetch('/api/admin/students', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
         if (data.success) {
             students = data.students;
             settings = data.settings;
@@ -106,69 +266,61 @@
     function renderStudentsTable() {
         const tbody = document.querySelector('#studentsTable tbody');
         tbody.innerHTML = '';
+        
         for (const student of students) {
             const row = tbody.insertRow();
             row.insertCell(0).textContent = student.seat_number;
-            row.insertCell(1).innerHTML = `<input type="text" value="${student.student_name || ''}" id="name_${student.seat_number}">`;
-            row.insertCell(2).innerHTML = `<input type="text" value="${student.school || ''}" id="school_${student.seat_number}">`;
+            row.insertCell(1).textContent = student.student_name || '—';
+            row.insertCell(2).textContent = student.school || '—';
             
-            // خلايا المواد
-            let subjectsHtml = '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+            // عرض الدرجات بشكل مختصر
+            let scoresHtml = '<div style="font-size:12px;">';
             for (const sub of settings.mainSubjects) {
                 const score = student.scores?.[sub.name] || 0;
-                subjectsHtml += `<div><small>${sub.name}</small><input type="number" step="0.5" value="${score}" id="sub_${student.seat_number}_${sub.name}" style="width:60px;"></div>`;
+                scoresHtml += `<div>${sub.name}: ${score}/${sub.max}</div>`;
             }
-            for (const sub of settings.extraSubjects) {
-                const score = student.scores?.[sub.name] || 0;
-                subjectsHtml += `<div><small>${sub.name}</small><input type="number" step="0.5" value="${score}" id="sub_${student.seat_number}_${sub.name}" style="width:60px;"></div>`;
-            }
-            subjectsHtml += '</div>';
-            row.insertCell(3).innerHTML = subjectsHtml;
+            scoresHtml += '</div>';
+            row.insertCell(3).innerHTML = scoresHtml;
             
-            row.insertCell(4).innerHTML = `<span id="total_${student.seat_number}">${student.total_score || 0}</span>`;
-            row.insertCell(5).innerHTML = `<button class="edit-btn" onclick="saveStudent('${student.seat_number}')">💾 حفظ</button>`;
+            // حساب المجموع
+            let total = 0;
+            for (const sub of settings.mainSubjects) {
+                total += student.scores?.[sub.name] || 0;
+            }
+            row.insertCell(4).innerHTML = `<strong>${total}</strong> / ${settings.mainSubjects.reduce((s,sub)=>s+sub.max,0)}`;
+            
+            row.insertCell(5).innerHTML = `
+                <button class="btn btn-primary" style="padding:5px 10px;margin:2px;" onclick="openEditModal('${student.seat_number}')">✏️ تعديل</button>
+                <button class="btn btn-danger" style="padding:5px 10px;margin:2px;" onclick="deleteStudent('${student.seat_number}')">🗑️ حذف</button>
+            `;
         }
-    }
-    
-    async function saveStudent(seatNumber) {
-        const token = localStorage.getItem('token');
-        const name = document.getElementById(`name_${seatNumber}`).value;
-        const school = document.getElementById(`school_${seatNumber}`).value;
-        const scores = {};
-        let total = 0;
-        
-        for (const sub of settings.mainSubjects) {
-            const val = parseFloat(document.getElementById(`sub_${seatNumber}_${sub.name}`).value) || 0;
-            scores[sub.name] = val;
-            total += val;
-        }
-        for (const sub of settings.extraSubjects) {
-            const val = parseFloat(document.getElementById(`sub_${seatNumber}_${sub.name}`).value) || 0;
-            scores[sub.name] = val;
-        }
-        
-        document.getElementById(`total_${seatNumber}`).textContent = total;
-        
-        await fetch('/api/admin/update-student', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ seat_number: seatNumber, student_name: name, school, scores, total_score: total })
-        });
-        alert('تم حفظ التعديلات');
     }
     
     function renderSettings() {
         document.getElementById('termSelect').value = settings.term;
+        
         const mainDiv = document.getElementById('mainSubjectsList');
         mainDiv.innerHTML = '';
         settings.mainSubjects.forEach((sub, i) => {
-            mainDiv.innerHTML += `<div style="margin:5px;"><input type="text" value="${sub.name}" id="main_name_${i}" placeholder="اسم المادة"><input type="number" value="${sub.max}" id="main_max_${i}" placeholder="الدرجة الكلية"><button onclick="removeSubject('main', ${i})">❌</button></div>`;
+            mainDiv.innerHTML += `
+                <div style="display:flex; gap:10px; margin:5px 0;">
+                    <input type="text" value="${sub.name}" id="main_name_${i}" placeholder="اسم المادة" style="flex:2;">
+                    <input type="number" value="${sub.max}" id="main_max_${i}" placeholder="الدرجة" style="flex:1;">
+                    <button class="btn btn-danger" onclick="removeSubject('main', ${i})">❌</button>
+                </div>
+            `;
         });
         
         const extraDiv = document.getElementById('extraSubjectsList');
         extraDiv.innerHTML = '';
         settings.extraSubjects.forEach((sub, i) => {
-            extraDiv.innerHTML += `<div style="margin:5px;"><input type="text" value="${sub.name}" id="extra_name_${i}"><input type="number" value="${sub.max}" id="extra_max_${i}"><button onclick="removeSubject('extra', ${i})">❌</button></div>`;
+            extraDiv.innerHTML += `
+                <div style="display:flex; gap:10px; margin:5px 0;">
+                    <input type="text" value="${sub.name}" id="extra_name_${i}" placeholder="اسم المادة" style="flex:2;">
+                    <input type="number" value="${sub.max}" id="extra_max_${i}" placeholder="الدرجة" style="flex:1;">
+                    <button class="btn btn-danger" onclick="removeSubject('extra', ${i})">❌</button>
+                </div>
+            `;
         });
     }
     
@@ -190,6 +342,7 @@
     async function saveSettings() {
         const token = localStorage.getItem('token');
         const term = document.getElementById('termSelect').value;
+        
         const newMainSubjects = [];
         for (let i = 0; i < settings.mainSubjects.length; i++) {
             newMainSubjects.push({
@@ -197,6 +350,7 @@
                 max: parseFloat(document.getElementById(`main_max_${i}`).value)
             });
         }
+        
         const newExtraSubjects = [];
         for (let i = 0; i < settings.extraSubjects.length; i++) {
             newExtraSubjects.push({
@@ -214,6 +368,123 @@
         loadData();
     }
     
+    function openAddModal() {
+        editingSeat = null;
+        document.getElementById('modalTitle').textContent = '➕ إضافة طالب جديد';
+        document.getElementById('editSeat').value = '';
+        document.getElementById('editName').value = '';
+        document.getElementById('editSchool').value = '';
+        document.getElementById('editAdmin').value = '';
+        buildScoresForm({});
+        document.getElementById('studentModal').style.display = 'flex';
+    }
+    
+    function openEditModal(seat) {
+        const student = students.find(s => s.seat_number === seat);
+        if (!student) return;
+        editingSeat = seat;
+        document.getElementById('modalTitle').textContent = '✏️ تعديل بيانات الطالب';
+        document.getElementById('editSeat').value = student.seat_number;
+        document.getElementById('editName').value = student.student_name || '';
+        document.getElementById('editSchool').value = student.school || '';
+        document.getElementById('editAdmin').value = student.administration || '';
+        buildScoresForm(student.scores || {});
+        document.getElementById('studentModal').style.display = 'flex';
+    }
+    
+    function buildScoresForm(scores) {
+        const container = document.getElementById('scoresContainer');
+        container.innerHTML = '';
+        
+        // المواد الأساسية
+        container.innerHTML += '<h4>📚 المواد الأساسية</h4>';
+        for (const sub of settings.mainSubjects) {
+            const val = scores[sub.name] || 0;
+            container.innerHTML += `
+                <div class="form-group">
+                    <label>${sub.name} (الدرجة الكلية: ${sub.max})</label>
+                    <input type="number" step="0.5" id="score_${sub.name}" value="${val}" placeholder="الدرجة">
+                </div>
+            `;
+        }
+        
+        // المواد الإضافية
+        container.innerHTML += '<h4>🎨 مواد لا تضاف للمجموع</h4>';
+        for (const sub of settings.extraSubjects) {
+            const val = scores[sub.name] || 0;
+            container.innerHTML += `
+                <div class="form-group">
+                    <label>${sub.name} (الدرجة الكلية: ${sub.max})</label>
+                    <input type="number" step="0.5" id="score_${sub.name}" value="${val}" placeholder="الدرجة">
+                </div>
+            `;
+        }
+    }
+    
+    async function saveStudent() {
+        const token = localStorage.getItem('token');
+        const seat_number = document.getElementById('editSeat').value;
+        const student_name = document.getElementById('editName').value;
+        const school = document.getElementById('editSchool').value;
+        const administration = document.getElementById('editAdmin').value;
+        
+        if (!seat_number || !student_name) {
+            alert('⚠️ رقم الجلوس واسم الطالب مطلوبان');
+            return;
+        }
+        
+        const scores = {};
+        for (const sub of settings.mainSubjects) {
+            const input = document.getElementById(`score_${sub.name}`);
+            if (input) scores[sub.name] = parseFloat(input.value) || 0;
+        }
+        for (const sub of settings.extraSubjects) {
+            const input = document.getElementById(`score_${sub.name}`);
+            if (input) scores[sub.name] = parseFloat(input.value) || 0;
+        }
+        
+        await fetch('/api/admin/save-student', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ seat_number, student_name, school, administration, scores })
+        });
+        
+        alert('تم حفظ الطالب بنجاح');
+        closeModal();
+        loadData();
+    }
+    
+    async function deleteStudent(seat) {
+        if (!confirm(`هل أنت متأكد من حذف الطالب رقم ${seat}؟`)) return;
+        const token = localStorage.getItem('token');
+        await fetch(`/api/admin/delete-student/${seat}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        loadData();
+    }
+    
+    async function sendNotification() {
+        const token = localStorage.getItem('token');
+        const title = document.getElementById('notifyTitle').value;
+        const body = document.getElementById('notifyBody').value;
+        const url = document.getElementById('notifyUrl').value;
+        
+        if (!title || !body) {
+            alert('⚠️ من فضلك أدخل عنوان ونص الإشعار');
+            return;
+        }
+        
+        const response = await fetch('/api/notify-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ title, body, url })
+        });
+        const data = await response.json();
+        alert(`✅ تم إرسال الإشعار إلى ${data.count} جهاز`);
+        closeNotifyModal();
+    }
+    
     function showTab(tab) {
         document.getElementById('studentsTab').style.display = tab === 'students' ? 'block' : 'none';
         document.getElementById('settingsTab').style.display = tab === 'settings' ? 'block' : 'none';
@@ -222,24 +493,9 @@
         });
     }
     
+    function closeModal() { document.getElementById('studentModal').style.display = 'none'; }
     function openNotifyModal() { document.getElementById('notifyModal').style.display = 'flex'; }
     function closeNotifyModal() { document.getElementById('notifyModal').style.display = 'none'; }
-    
-    async function sendNotification() {
-        const token = localStorage.getItem('token');
-        const title = document.getElementById('notifyTitle').value;
-        const body = document.getElementById('notifyBody').value;
-        const url = document.getElementById('notifyUrl').value;
-        
-        await fetch('/api/notify-all', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ title, body, url })
-        });
-        alert('تم إرسال الإشعارات');
-        closeNotifyModal();
-    }
-    
     function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
     
     loadData();
