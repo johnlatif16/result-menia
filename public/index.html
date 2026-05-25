@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نتائج الدراسة - محافظة المنيا</title>
+    <title>نتائج الدراسة - نظام إدارة النتائج</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -18,7 +18,6 @@
             border-radius: 24px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
-            margin-bottom: 20px;
         }
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -48,8 +47,7 @@
             cursor: pointer;
         }
         .result-box { padding: 25px; display: none; }
-        .result-box.show { display: block; animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .result-box.show { display: block; }
         .student-info {
             background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
             padding: 20px;
@@ -61,10 +59,7 @@
             justify-content: space-between;
             padding: 10px 0;
             border-bottom: 1px solid #dee2e6;
-            flex-wrap: wrap;
         }
-        .info-label { font-weight: bold; color: #4a5568; }
-        .info-value { color: #2d3748; }
         .subjects-table {
             width: 100%;
             border-collapse: collapse;
@@ -77,10 +72,9 @@
         }
         .subjects-table td {
             padding: 12px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #ddd;
             text-align: center;
         }
-        .subject-grade { font-weight: bold; color: #48bb78; }
         .total-score {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -90,35 +84,20 @@
             margin-top: 20px;
         }
         .total-score .score { font-size: 32px; font-weight: bold; }
-        .extra-note {
-            background: #fef5e7;
-            padding: 12px;
-            border-radius: 12px;
-            margin-top: 15px;
-            text-align: center;
-            font-size: 13px;
-            color: #a66b00;
-        }
         .loading { text-align: center; padding: 40px; color: #667eea; }
         .error { text-align: center; padding: 40px; color: #e53e3e; background: #fff5f5; border-radius: 16px; }
-        .notification-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 12px 20px;
-            cursor: pointer;
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .admin-link a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
             font-size: 14px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1000;
         }
         @media (max-width: 600px) {
             .input-group { flex-direction: column; }
             .info-row { flex-direction: column; gap: 5px; }
-            .info-value { text-align: right; }
         }
     </style>
 </head>
@@ -127,7 +106,7 @@
         <div class="card">
             <div class="header">
                 <h1>🎓 نتائج الدراسة</h1>
-                <p id="termText">محافظة المنيا - جاري التحميل...</p>
+                <p id="termText">محافظة المنيا - نظام إدارة النتائج</p>
             </div>
             <div class="search-box">
                 <div class="input-group">
@@ -137,23 +116,13 @@
             </div>
             <div id="result" class="result-box"></div>
         </div>
+        <div class="admin-link">
+            <a href="/login.html">🔐 دخول المشرف</a>
+        </div>
     </div>
-    <button class="notification-btn" onclick="subscribeToNotifications()">🔔 فعّل الإشعارات</button>
 
     <script>
         let settings = { mainSubjects: [], extraSubjects: [], term: 'first' };
-        
-        // تحميل الإعدادات من السيرفر
-        async function loadSettings() {
-            try {
-                const res = await fetch('/api/admin/settings');
-                const data = await res.json();
-                if (data.settings) {
-                    settings = data.settings;
-                    document.getElementById('termText').innerHTML = `محافظة المنيا - ${settings.term === 'first' ? 'الفصل الدراسي الأول' : 'الفصل الدراسي الثاني'}`;
-                }
-            } catch(e) { console.error(e); }
-        }
         
         async function searchResult() {
             const seatNum = document.getElementById('seatNumber').value.trim();
@@ -174,48 +143,52 @@
                 
                 if (data.success && data.student) {
                     const student = data.student;
-                    const mainSubjects = settings.mainSubjects;
-                    const extraSubjects = settings.extraSubjects;
+                    settings = data.settings;
                     
-                    let studentTotal = 0;
-                    let mainHtml = '<h3 style="margin: 20px 0 10px 0;">📚 المواد الأساسية</h3><table class="subjects-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>الدرجة الكلية</th></tr></thead><tbody>';
+                    document.getElementById('termText').innerHTML = `محافظة المنيا - ${settings.term === 'first' ? 'الفصل الدراسي الأول' : 'الفصل الدراسي الثاني'}`;
                     
-                    for (const sub of mainSubjects) {
+                    let totalScore = 0;
+                    let mainHtml = '<h3 style="margin:20px 0 10px 0;">📚 المواد الأساسية</h3><table class="subjects-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>الدرجة الكلية</th></tr></thead><tbody>';
+                    
+                    for (const sub of settings.mainSubjects) {
                         const score = student.scores?.[sub.name] || 0;
-                        studentTotal += score;
-                        mainHtml += `<tr><td>${sub.name}</td><td class="subject-grade">${score}</td><td>/ ${sub.max}</td></tr>`;
+                        totalScore += score;
+                        mainHtml += `<tr><td>${sub.name}</td><td style="font-weight:bold;color:#48bb78;">${score}</td><td>/ ${sub.max}</td></tr>`;
                     }
                     mainHtml += '</tbody></table>';
                     
-                    let extraHtml = '<h3 style="margin: 20px 0 10px 0;">🎨 مواد لا تضاف للمجموع</h3><table class="subjects-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>الدرجة الكلية</th></tr></thead><tbody>';
-                    for (const sub of extraSubjects) {
+                    let extraHtml = '<h3 style="margin:20px 0 10px 0;">🎨 مواد لا تضاف للمجموع</h3><table class="subjects-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>الدرجة الكلية</th></tr></thead><tbody>';
+                    for (const sub of settings.extraSubjects) {
                         const score = student.scores?.[sub.name] || 0;
-                        extraHtml += `<tr><td>${sub.name}</td><td class="subject-grade">${score}</td><td>/ ${sub.max}</td></tr>`;
+                        extraHtml += `<tr><td>${sub.name}</td><td style="font-weight:bold;color:#48bb78;">${score}</td><td>/ ${sub.max}</td></tr>`;
                     }
                     extraHtml += '</tbody></table>';
                     
-                    const totalMax = mainSubjects.reduce((sum, s) => sum + s.max, 0);
+                    const totalMax = settings.mainSubjects.reduce((sum, s) => sum + s.max, 0);
                     
                     resultDiv.innerHTML = `
                         <div class="student-info">
                             <h2>📄 بيانات الطالب</h2>
-                            <div class="info-row"><span class="info-label">🎫 رقم الجلوس:</span><span class="info-value">${student.seat_number}</span></div>
-                            <div class="info-row"><span class="info-label">👤 اسم الطالب:</span><span class="info-value">${student.student_name}</span></div>
-                            <div class="info-row"><span class="info-label">🏫 المدرسة:</span><span class="info-value">${student.school || 'غير متوفر'}</span></div>
-                            <div class="info-row"><span class="info-label">📍 الإدارة التعليمية:</span><span class="info-value">${student.administration || 'غير متوفر'}</span></div>
+                            <div class="info-row"><span class="info-label">🎫 رقم الجلوس:</span><span>${student.seat_number}</span></div>
+                            <div class="info-row"><span class="info-label">👤 اسم الطالب:</span><span>${student.student_name}</span></div>
+                            <div class="info-row"><span class="info-label">🏫 المدرسة:</span><span>${student.school || 'غير متوفر'}</span></div>
+                            <div class="info-row"><span class="info-label">📍 الإدارة التعليمية:</span><span>${student.administration || 'غير متوفر'}</span></div>
                         </div>
                         ${mainHtml}
                         ${extraHtml}
-                        <div class="total-score"><h3>📊 المجموع الكلي (المواد الأساسية فقط)</h3><div class="score">${studentTotal} / ${totalMax}</div></div>
-                        <div class="extra-note">⚠️ المواد الإضافية لا تضاف إلى المجموع الكلي، وتعرض للتقييم والمتابعة فقط.</div>
+                        <div class="total-score"><h3>📊 المجموع الكلي (المواد الأساسية فقط)</h3><div class="score">${totalScore} / ${totalMax}</div></div>
                     `;
                 } else {
-                    resultDiv.innerHTML = `<div class="error">${data.message || '❌ لا توجد نتيجة'}</div>`;
+                    resultDiv.innerHTML = `<div class="error">${data.message || '❌ لا توجد نتيجة لهذا الرقم'}</div>`;
                 }
             } catch (err) {
                 resultDiv.innerHTML = '<div class="error">⚠️ حدث خطأ في جلب البيانات</div>';
             }
         }
+        
+        document.getElementById('seatNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchResult();
+        });
         
         // تفعيل الإشعارات
         async function subscribeToNotifications() {
@@ -225,7 +198,7 @@
                     const sw = await navigator.serviceWorker.register('/sw.js');
                     const subscription = await sw.pushManager.subscribe({
                         userVisibleOnly: true,
-                        applicationServerKey: urlBase64ToUint8Array('BEl62iUY5uU3xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6')
+                        applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')
                     });
                     await fetch('/api/subscribe', {
                         method: 'POST',
@@ -246,8 +219,12 @@
             return outputArray;
         }
         
-        document.getElementById('seatNumber').addEventListener('keypress', (e) => { if(e.key === 'Enter') searchResult(); });
-        loadSettings();
+        // إضافة زر تفعيل الإشعارات في الصفحة
+        const btn = document.createElement('button');
+        btn.textContent = '🔔 فعّل الإشعارات';
+        btn.style.cssText = 'position:fixed; bottom:20px; left:20px; background:#667eea; color:white; border:none; border-radius:50px; padding:12px 20px; cursor:pointer; font-size:14px; box-shadow:0 2px 10px rgba(0,0,0,0.2); z-index:1000;';
+        btn.onclick = subscribeToNotifications;
+        document.body.appendChild(btn);
     </script>
 </body>
 </html>
