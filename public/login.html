@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+
+<style>
+body{
+  font-family:Arial;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  background:#eee;
+}
+
+.box{
+  background:white;
+  padding:30px;
+  width:300px;
+  border-radius:10px;
+}
+
+input,button{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="box">
+
+<h2>تسجيل الدخول</h2>
+
+<input type="text" id="username" placeholder="Username">
+
+<input type="password" id="password" placeholder="Password">
+
+<button onclick="login()">Login</button>
+
+</div>
+
+<script>
+
+async function login(){
+
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/login",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      username,
+      password
+    })
+  });
+
+  const data = await res.json();
+
+  if(data.token){
+
+    localStorage.setItem("token",data.token);
+
+    window.location.href="/dashboard.html";
+
+  }else{
+
+    alert(data.message);
+
+  }
+
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نتائج الدراسة - نظام البحث</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Tahoma', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-family: inherit;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            background: #5a67d8;
+            transform: scale(1.02);
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f7f7f7;
+            border-radius: 10px;
+            display: none;
+            text-align: right;
+        }
+        .result.show {
+            display: block;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+            color: #667eea;
+        }
+        .loading.show {
+            display: block;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .admin-link {
+            margin-top: 20px;
+            font-size: 12px;
+        }
+        .admin-link a {
+            color: #999;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏫 نظام نتائج الدراسة</h1>
+        <div class="subtitle">أدخل رقم الجلوس لعرض النتيجة</div>
+        
+        <input type="text" id="seatNumber" placeholder="رقم الجلوس" autocomplete="off">
+        <button onclick="searchResult()">🔍 بحث</button>
+        
+        <div class="loading" id="loading">
+            جاري البحث عن النتيجة...
+        </div>
+        
+        <div class="result" id="result"></div>
+        
+        <div class="admin-link">
+            <a href="/login.html">🔐 دخول المشرفين</a>
+        </div>
+    </div>
+
+    <script>
+        async function searchResult() {
+            const seatNum = document.getElementById('seatNumber').value.trim();
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            
+            if (!seatNum) {
+                resultDiv.innerHTML = '<div class="error">⚠️ من فضلك أدخل رقم الجلوس</div>';
+                resultDiv.classList.add('show');
+                return;
+            }
+            
+            loadingDiv.classList.add('show');
+            resultDiv.classList.remove('show');
+            
+            try {
+                const response = await fetch(`/api/search?seat=${seatNum}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = data.result;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ ${data.message}</div>`;
+                }
+                resultDiv.classList.add('show');
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">⚠️ حدث خطأ في الاتصال بالخادم</div>';
+                resultDiv.classList.add('show');
+            } finally {
+                loadingDiv.classList.remove('show');
+            }
+        }
+        
+        // السماح بالبحث بضغط Enter
+        document.getElementById('seatNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchResult();
+            }
+        });
+    </script>
+</body>
+</html>

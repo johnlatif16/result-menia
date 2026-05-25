@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
+
+<style>
+body{
+  font-family:Arial;
+  padding:30px;
+}
+</style>
+
+</head>
+<body>
+
+<h1>Dashboard</h1>
+
+<button onclick="logout()">Logout</button>
+
+<script>
+
+const token = localStorage.getItem("token");
+
+if(!token){
+  window.location.href="/login.html";
+}
+
+fetch("/dashboard",{
+  headers:{
+    Authorization:`Bearer ${token}`
+  }
+})
+.then(res => {
+  if(res.status !== 200){
+    localStorage.removeItem("token");
+    window.location.href="/login.html";
+  }
+});
+
+function logout(){
+  localStorage.removeItem("token");
+  window.location.href="/login.html";
+}
+
+</script>
+
+</body>
+</html>
