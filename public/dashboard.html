@@ -1,49 +1,178 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>Dashboard</title>
-
-<style>
-body{
-  font-family:Arial;
-  padding:30px;
-}
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - إحصائيات البحث</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Tahoma', Arial, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .logout-btn {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            margin-bottom: 15px;
+            color: #333;
+            border-right: 4px solid #667eea;
+            padding-right: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #667eea;
+            color: white;
+        }
+        .found { color: green; font-weight: bold; }
+        .not-found { color: red; }
+        @media (max-width: 768px) {
+            th, td { font-size: 12px; padding: 8px; }
+        }
+    </style>
 </head>
+<button onclick="window.location.href='/admin.html'" style="background:#667eea;color:white;border:none;padding:10px 20px;border-radius:8px;margin-left:10px;">✏️ تعديل النتائج</button>
 <body>
+    <div class="header">
+        <h1>📊 لوحة تحكم النتائج</h1>
+        <button class="logout-btn" onclick="logout()">🚪 تسجيل خروج</button>
+    </div>
 
-<h1>Dashboard</h1>
+    <div class="stats-grid" id="stats">
+        <div class="stat-card">
+            <h3>إجمالي عمليات البحث</h3>
+            <div class="number" id="totalSearches">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>عمليات البحث الناجحة</h3>
+            <div class="number" id="successfulSearches">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>نسبة النجاح</h3>
+            <div class="number" id="successRate">0%</div>
+        </div>
+    </div>
 
-<button onclick="logout()">Logout</button>
+    <div class="card">
+        <h2>📋 آخر 30 عملية بحث</h2>
+        <div style="overflow-x: auto;">
+            <table id="logsTable">
+                <thead>
+                    <tr>
+                        <th>رقم الجلوس</th>
+                        <th>الاسم (في حالة النجاح)</th>
+                        <th>المجموع</th>
+                        <th>الحالة</th>
+                        <th>التوقيت</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
 
-<script>
+    <script>
+        async function loadDashboard() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
 
-const token = localStorage.getItem("token");
-
-if(!token){
-  window.location.href="/login.html";
-}
-
-fetch("/dashboard",{
-  headers:{
-    Authorization:`Bearer ${token}`
-  }
-})
-.then(res => {
-  if(res.status !== 200){
-    localStorage.removeItem("token");
-    window.location.href="/login.html";
-  }
-});
-
-function logout(){
-  localStorage.removeItem("token");
-  window.location.href="/login.html";
-}
-
-</script>
-
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Unauthorized');
+                }
+                
+                const data = await response.json();
+                
+                document.getElementById('totalSearches').textContent = data.totalSearches;
+                document.getElementById('successfulSearches').textContent = data.successfulSearches;
+                document.getElementById('successRate').textContent = `${data.successRate}%`;
+                
+                const tbody = document.querySelector('#logsTable tbody');
+                tbody.innerHTML = '';
+                
+                data.logs.forEach(log => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = log.seat;
+                    row.insertCell(1).textContent = log.found ? (log.student_name || '—') : '—';
+                    row.insertCell(2).textContent = log.found ? (log.total_score || '—') : '—';
+                    row.insertCell(3).innerHTML = log.found ? '<span class="found">✅ موجود</span>' : '<span class="not-found">❌ غير موجود</span>';
+                    row.insertCell(4).textContent = new Date(log.time).toLocaleString('ar-EG');
+                });
+            } catch (error) {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+        
+        loadDashboard();
+        // تحديث كل 10 ثواني
+        setInterval(loadDashboard, 10000);
+    </script>
 </body>
 </html>

@@ -3,126 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نتائج الدراسة - نظام البحث</title>
+    <title>نتائج الدراسة - محافظة المنيا</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Tahoma', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Cairo', 'Tahoma', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
         }
-        .container {
+        .container { max-width: 900px; margin: 0 auto; }
+        .card {
             background: white;
-            border-radius: 20px;
+            border-radius: 24px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-        input {
-            width: 100%;
-            padding: 15px;
-            font-size: 18px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
+            overflow: hidden;
             margin-bottom: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
             text-align: center;
-            font-family: inherit;
         }
-        input:focus {
-            outline: none;
-            border-color: #667eea;
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .search-box { padding: 30px 25px; background: #f8f9fa; }
+        .input-group { display: flex; gap: 12px; flex-wrap: wrap; }
+        .input-group input {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 16px;
+            text-align: center;
         }
-        button {
+        .input-group button {
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .result-box { padding: 25px; display: none; }
+        .result-box.show { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .student-info {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+            flex-wrap: wrap;
+        }
+        .info-label { font-weight: bold; color: #4a5568; }
+        .info-value { color: #2d3748; }
+        .subjects-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .subjects-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+        }
+        .subjects-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        .subject-grade { font-weight: bold; color: #48bb78; }
+        .total-score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .total-score .score { font-size: 32px; font-weight: bold; }
+        .extra-note {
+            background: #fef5e7;
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 13px;
+            color: #a66b00;
+        }
+        .loading { text-align: center; padding: 40px; color: #667eea; }
+        .error { text-align: center; padding: 40px; color: #e53e3e; background: #fff5f5; border-radius: 16px; }
+        .notification-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
             background: #667eea;
             color: white;
             border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 10px;
+            border-radius: 50px;
+            padding: 12px 20px;
             cursor: pointer;
-            width: 100%;
-            transition: transform 0.2s;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
         }
-        button:hover {
-            background: #5a67d8;
-            transform: scale(1.02);
-        }
-        .result {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f7f7f7;
-            border-radius: 10px;
-            display: none;
-            text-align: right;
-        }
-        .result.show {
-            display: block;
-        }
-        .loading {
-            display: none;
-            margin-top: 20px;
-            color: #667eea;
-        }
-        .loading.show {
-            display: block;
-        }
-        .error {
-            color: red;
-            margin-top: 10px;
-        }
-        .admin-link {
-            margin-top: 20px;
-            font-size: 12px;
-        }
-        .admin-link a {
-            color: #999;
-            text-decoration: none;
+        @media (max-width: 600px) {
+            .input-group { flex-direction: column; }
+            .info-row { flex-direction: column; gap: 5px; }
+            .info-value { text-align: right; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🏫 نظام نتائج الدراسة</h1>
-        <div class="subtitle">أدخل رقم الجلوس لعرض النتيجة</div>
-        
-        <input type="text" id="seatNumber" placeholder="رقم الجلوس" autocomplete="off">
-        <button onclick="searchResult()">🔍 بحث</button>
-        
-        <div class="loading" id="loading">
-            جاري البحث عن النتيجة...
-        </div>
-        
-        <div class="result" id="result"></div>
-        
-        <div class="admin-link">
-            <a href="/login.html">🔐 دخول المشرفين</a>
+        <div class="card">
+            <div class="header">
+                <h1>🎓 نتائج الدراسة</h1>
+                <p id="termText">محافظة المنيا - جاري التحميل...</p>
+            </div>
+            <div class="search-box">
+                <div class="input-group">
+                    <input type="text" id="seatNumber" placeholder="📝 أدخل رقم الجلوس" autocomplete="off">
+                    <button onclick="searchResult()">🔍 بحث</button>
+                </div>
+            </div>
+            <div id="result" class="result-box"></div>
         </div>
     </div>
+    <button class="notification-btn" onclick="subscribeToNotifications()">🔔 فعّل الإشعارات</button>
 
     <script>
+        let settings = { mainSubjects: [], extraSubjects: [], term: 'first' };
+        
+        // تحميل الإعدادات من السيرفر
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/admin/settings');
+                const data = await res.json();
+                if (data.settings) {
+                    settings = data.settings;
+                    document.getElementById('termText').innerHTML = `محافظة المنيا - ${settings.term === 'first' ? 'الفصل الدراسي الأول' : 'الفصل الدراسي الثاني'}`;
+                }
+            } catch(e) { console.error(e); }
+        }
+        
         async function searchResult() {
             const seatNum = document.getElementById('seatNumber').value.trim();
             const resultDiv = document.getElementById('result');
-            const loadingDiv = document.getElementById('loading');
             
             if (!seatNum) {
                 resultDiv.innerHTML = '<div class="error">⚠️ من فضلك أدخل رقم الجلوس</div>';
@@ -130,33 +165,89 @@
                 return;
             }
             
-            loadingDiv.classList.add('show');
-            resultDiv.classList.remove('show');
+            resultDiv.innerHTML = '<div class="loading">⏳ جاري البحث عن النتيجة...</div>';
+            resultDiv.classList.add('show');
             
             try {
                 const response = await fetch(`/api/search?seat=${seatNum}`);
                 const data = await response.json();
                 
-                if (data.success) {
-                    resultDiv.innerHTML = data.result;
+                if (data.success && data.student) {
+                    const student = data.student;
+                    const mainSubjects = settings.mainSubjects;
+                    const extraSubjects = settings.extraSubjects;
+                    
+                    let studentTotal = 0;
+                    let mainHtml = '<h3 style="margin: 20px 0 10px 0;">📚 المواد الأساسية</h3><table class="subjects-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>الدرجة الكلية</th></tr></thead><tbody>';
+                    
+                    for (const sub of mainSubjects) {
+                        const score = student.scores?.[sub.name] || 0;
+                        studentTotal += score;
+                        mainHtml += `<tr><td>${sub.name}</td><td class="subject-grade">${score}</td><td>/ ${sub.max}</td></tr>`;
+                    }
+                    mainHtml += '</tbody></table>';
+                    
+                    let extraHtml = '<h3 style="margin: 20px 0 10px 0;">🎨 مواد لا تضاف للمجموع</h3><table class="subjects-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>الدرجة الكلية</th></tr></thead><tbody>';
+                    for (const sub of extraSubjects) {
+                        const score = student.scores?.[sub.name] || 0;
+                        extraHtml += `<tr><td>${sub.name}</td><td class="subject-grade">${score}</td><td>/ ${sub.max}</td></tr>`;
+                    }
+                    extraHtml += '</tbody></table>';
+                    
+                    const totalMax = mainSubjects.reduce((sum, s) => sum + s.max, 0);
+                    
+                    resultDiv.innerHTML = `
+                        <div class="student-info">
+                            <h2>📄 بيانات الطالب</h2>
+                            <div class="info-row"><span class="info-label">🎫 رقم الجلوس:</span><span class="info-value">${student.seat_number}</span></div>
+                            <div class="info-row"><span class="info-label">👤 اسم الطالب:</span><span class="info-value">${student.student_name}</span></div>
+                            <div class="info-row"><span class="info-label">🏫 المدرسة:</span><span class="info-value">${student.school || 'غير متوفر'}</span></div>
+                            <div class="info-row"><span class="info-label">📍 الإدارة التعليمية:</span><span class="info-value">${student.administration || 'غير متوفر'}</span></div>
+                        </div>
+                        ${mainHtml}
+                        ${extraHtml}
+                        <div class="total-score"><h3>📊 المجموع الكلي (المواد الأساسية فقط)</h3><div class="score">${studentTotal} / ${totalMax}</div></div>
+                        <div class="extra-note">⚠️ المواد الإضافية لا تضاف إلى المجموع الكلي، وتعرض للتقييم والمتابعة فقط.</div>
+                    `;
                 } else {
-                    resultDiv.innerHTML = `<div class="error">❌ ${data.message}</div>`;
+                    resultDiv.innerHTML = `<div class="error">${data.message || '❌ لا توجد نتيجة'}</div>`;
                 }
-                resultDiv.classList.add('show');
-            } catch (error) {
-                resultDiv.innerHTML = '<div class="error">⚠️ حدث خطأ في الاتصال بالخادم</div>';
-                resultDiv.classList.add('show');
-            } finally {
-                loadingDiv.classList.remove('show');
+            } catch (err) {
+                resultDiv.innerHTML = '<div class="error">⚠️ حدث خطأ في جلب البيانات</div>';
             }
         }
         
-        // السماح بالبحث بضغط Enter
-        document.getElementById('seatNumber').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchResult();
+        // تفعيل الإشعارات
+        async function subscribeToNotifications() {
+            if ('Notification' in window && 'serviceWorker' in navigator) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const sw = await navigator.serviceWorker.register('/sw.js');
+                    const subscription = await sw.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array('BEl62iUY5uU3xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6xGqF6')
+                    });
+                    await fetch('/api/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(subscription)
+                    });
+                    alert('✅ تم تفعيل الإشعارات بنجاح!');
+                }
             }
-        });
+        }
+        
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+            return outputArray;
+        }
+        
+        document.getElementById('seatNumber').addEventListener('keypress', (e) => { if(e.key === 'Enter') searchResult(); });
+        loadSettings();
     </script>
 </body>
 </html>

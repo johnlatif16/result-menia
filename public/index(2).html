@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>نتائج الدراسة - محافظة المنيا</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', 'Tahoma', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            padding: 30px 25px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 16px;
+            font-family: inherit;
+            text-align: center;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
+        .input-group button {
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .input-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102,126,234,0.4);
+        }
+
+        .result-box {
+            padding: 25px;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .student-info {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        .student-info h2 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 22px;
+            border-right: 4px solid #667eea;
+            padding-right: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        .info-value {
+            color: #2d3748;
+            text-align: left;
+        }
+
+        .subjects-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .subjects-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .subjects-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .subject-name {
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .subject-grade {
+            font-size: 18px;
+            font-weight: bold;
+            color: #48bb78;
+        }
+
+        .total-score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .total-score h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .total-score .score {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .extra-note {
+            background: #fef5e7;
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 13px;
+            color: #a66b00;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #e53e3e;
+            background: #fff5f5;
+            border-radius: 16px;
+        }
+
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .admin-link a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .input-group {
+                flex-direction: column;
+            }
+            .info-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+            .info-value {
+                text-align: right;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>🎓 نتائج الدراسة</h1>
+                <p>محافظة المنيا - الفصل الدراسي الأول</p>
+            </div>
+            
+            <div class="search-box">
+                <div class="input-group">
+                    <input type="text" id="seatNumber" placeholder="📝 أدخل رقم الجلوس" autocomplete="off">
+                    <button onclick="searchResult()">🔍 بحث</button>
+                </div>
+            </div>
+            
+            <div id="result" class="result-box"></div>
+        </div>
+
+
+    <script>
+        // المواد الأساسية (تُحسب في المجموع) - حسب طلبك
+        const mainSubjects = [
+            { name: "اللغة العربية", max: 80 },
+            { name: "اللغة الإنجليزية", max: 60 },
+            { name: "الجبر", max: 30 },
+            { name: "الهندسة", max: 30 },
+            { name: "العلوم", max: 40 },
+            { name: "الدراسات الاجتماعية", max: 40 },
+            { name: "فرانساوي", max: 20 }
+        ];
+
+        // المواد الإضافية (تُعرض فقط ولا تُحسب في المجموع) - حسب طلبك
+        const extraSubjects = [
+            { name: "التربية الدينية", max: 40 },
+            { name: "التربية الفنية", max: 20 },
+            { name: "الحاسب الآلي", max: 20 },
+            { name: "نشاط 2", max: 20 }
+        ];
+
+        // المجموع الكلي للمواد الأساسية فقط
+        const totalMaxScore = mainSubjects.reduce((sum, sub) => sum + sub.max, 0);
+
+        async function searchResult() {
+            const seatNum = document.getElementById('seatNumber').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!seatNum) {
+                resultDiv.innerHTML = '<div class="error">⚠️ من فضلك أدخل رقم الجلوس</div>';
+                resultDiv.classList.add('show');
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="loading">⏳ جاري البحث عن النتيجة...</div>';
+            resultDiv.classList.add('show');
+            
+            const apiUrl = `https://www.natega4dk.net/api/governorates/menia/search?q=${seatNum}&type=seat_number&page=1&per_page=20`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+            
+            try {
+                const response = await fetch(proxyUrl);
+                const proxyData = await response.json();
+                const data = JSON.parse(proxyData.contents);
+                
+                if (data.data && data.data.length > 0) {
+                    const student = data.data[0];
+                    
+                    // درجات الطالب - حسب البيانات اللي عندك (عدلها حسب الحاجة)
+                    const studentScores = {
+                        "اللغة العربية": 30,
+                        "اللغة الإنجليزية": 15,
+                        "الجبر": 12.5,
+                        "الهندسة": 7.5,
+                        "العلوم": 4,
+                        "الدراسات الاجتماعية": 13,
+                        "فرانساوي": 8,
+                        "التربية الدينية": 18,
+                        "التربية الفنية": 7,
+                        "الحاسب الآلي": 5,
+                        "نشاط 2": 9
+                    };
+                    
+                    // جدول المواد الأساسية
+                    let mainSubjectsHtml = '<h3 style="margin: 20px 0 10px 0; color: #2d3748;">📚 المواد الأساسية</h3>';
+                    mainSubjectsHtml += '<table class="subjects-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>الدرجة الكلية</th></tr></thead><tbody>';
+                    let studentTotal = 0;
+                    
+                    for (const subject of mainSubjects) {
+                        const studentScore = studentScores[subject.name] || 0;
+                        studentTotal += studentScore;
+                        mainSubjectsHtml += `
+                            <tr>
+                                <td class="subject-name">${subject.name}</td>
+                                <td class="subject-grade">${studentScore}</td>
+                                <td>/ ${subject.max}</td>
+                            </tr>
+                        `;
+                    }
+                    mainSubjectsHtml += '</tbody></table>';
+                    
+                    // جدول المواد الإضافية
+                    let extraSubjectsHtml = '<h3 style="margin: 20px 0 10px 0; color: #2d3748;">🎨 مواد لا تضاف للمجموع</h3>';
+                    extraSubjectsHtml += '<p style="font-size: 13px; color: #a66b00; margin-bottom: 10px;">هذه المواد تظهر للتقييم والمتابعة فقط</p>';
+                    extraSubjectsHtml += '<table class="subjects-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>الدرجة الكلية</th></tr></thead><tbody>';
+                    
+                    for (const subject of extraSubjects) {
+                        const studentScore = studentScores[subject.name] || 0;
+                        
+                        extraSubjectsHtml += `
+                            <tr>
+                                <td class="subject-name">${subject.name}</td>
+                                <td class="subject-grade">${studentScore}</td>
+                                <td>/ ${subject.max}</td>
+                            </tr>
+                        `;
+                    }
+                    extraSubjectsHtml += '</tbody></table>';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="student-info">
+                            <h2>📄 بيانات الطالب</h2>
+                            <div class="info-row">
+                                <span class="info-label">🎫 رقم الجلوس:</span>
+                                <span class="info-value">${student.seat_number}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">👤 اسم الطالب:</span>
+                                <span class="info-value">${student.student_name}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">🏫 المدرسة:</span>
+                                <span class="info-value">${student.school}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">📍 الإدارة التعليمية:</span>
+                                <span class="info-value">${student.administration}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">📅 الفصل الدراسي:</span>
+                                <span class="info-value">${student.term === 1 ? 'الأول' : 'الثاني'}</span>
+                            </div>
+                        </div>
+                        
+                        ${mainSubjectsHtml}
+                        ${extraSubjectsHtml}
+                        
+                        <div class="total-score">
+                            <h3>📊 المجموع الكلي (المواد الأساسية فقط)</h3>
+                            <div class="score">${studentTotal} / ${totalMaxScore}</div>
+                        </div>
+                        <div class="extra-note">
+                            ⚠️ المواد الإضافية (التربية الدينية، التربية الفنية، الحاسب الآلي، نشاط 2) لا تضاف إلى المجموع الكلي، وتعرض للتقييم والمتابعة فقط.
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = '<div class="error">❌ لا توجد نتيجة لهذا الرقم</div>';
+                }
+            } catch (err) {
+                console.error(err);
+                resultDiv.innerHTML = '<div class="error">⚠️ حدث خطأ في جلب البيانات. يرجى المحاولة مرة أخرى.</div>';
+            }
+        }
+        
+        // البحث بالضغط على Enter
+        document.getElementById('seatNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchResult();
+            }
+        });
+    </script>
+</body>
+</html>
