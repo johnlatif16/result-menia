@@ -10,24 +10,35 @@ const SECRET_KEY = process.env.JWT_SECRET || 'my_secret_key';
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
+// الرابط الرسمي للـ API
 const API_URL = 'https://www.natega4dk.net/api/governorates/menia/search';
+// خدمة Proxy لتجاوز الحظر
+const PROXY_URL = 'https://api.allorigins.win/get?url=';
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// سجل البحث في الذاكرة فقط (لأن Vercel لا يسمح بكتابة ملفات)
+// سجل البحث في الذاكرة
 let searchLogs = [];
 
-// دالة لجلب البيانات
-function fetchJSON(url) {
+// دالة لجلب البيانات عبر الـ Proxy
+function fetchJSONviaProxy(apiUrl) {
     return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
+        const proxyFullUrl = `${PROXY_URL}${encodeURIComponent(apiUrl)}`;
+        
+        https.get(proxyFullUrl, (res) => {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
                 try {
-                    resolve(JSON.parse(data));
+                    const proxyResponse = JSON.parse(data);
+                    if (proxyResponse.contents) {
+                        const originalData = JSON.parse(proxyResponse.contents);
+                        resolve(originalData);
+                    } else {
+                        reject(new Error('Proxy response has no contents'));
+                    }
                 } catch(e) {
                     reject(e);
                 }
@@ -36,7 +47,7 @@ function fetchJSON(url) {
     });
 }
 
-// 🔍 البحث من الـ API
+// 🔍 البحث من الـ API (عبر Proxy)
 app.get('/api/search', async (req, res) => {
     const seatNumber = req.query.seat;
     
@@ -46,14 +57,15 @@ app.get('/api/search', async (req, res) => {
     
     try {
         const url = `${API_URL}?q=${seatNumber}&type=seat_number&page=1&per_page=20`;
-        console.log('جاري الاتصال بـ:', url);
+        console.log('جاري الاتصال عبر Proxy بـ:', url);
         
-        const data = await fetchJSON(url);
+        // جلب البيانات عبر الـ Proxy
+        const data = await fetchJSONviaProxy(url);
         
         if (data.data && data.data.length > 0) {
             const result = data.data[0];
             
-            // تنسيق النتيجة (بنفس الشكل القديم)
+            // تنسيق النتيجة
             const formattedResult = `
                 <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; text-align: right;">
                     <h3 style="color: #2e7d32; margin-bottom: 15px;">✅ نتيجة رقم الجلوس: ${result.seat_number}</h3>
@@ -73,7 +85,6 @@ app.get('/api/search', async (req, res) => {
                 total_score: result.total_score,
                 time: Date.now() 
             });
-            // نحتفظ بآخر 100 سجل فقط
             if (searchLogs.length > 100) searchLogs.pop();
             
             return res.json({ success: true, result: formattedResult });
@@ -143,5 +154,5 @@ app.get('/api/admin/stats', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📊 Admin login: ${ADMIN_USER} / ${ADMIN_PASS}`);
-    console.log(`🔗 Using API: ${API_URL}`);
+    console.log(`🔗 Using Proxy for API: ${API_URL}`);
 });
