@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const https = require('https');
+const admin = require('firebase-admin');
+const webpush = require('web-push');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,105 +11,172 @@ const SECRET_KEY = process.env.JWT_SECRET || 'my_secret_key';
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
-// الرابط الرسمي للـ API
-const API_URL = 'https://www.natega4dk.net/api/governorates/menia/search';
-// خدمة Proxy لتجاوز الحظر
-const PROXY_URL = 'https://api.allorigins.win/get?url=';
+// ========================
+// تهيئة Firebase
+// ========================
+let firebaseConfig;
+try {
+    if (process.env.FIREBASE_CONFIG) {
+        firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+    } else {
+        firebaseConfig = require('./firebase-key.json');
+    }
+    
+    if (!admin.apps.length) {
+        admin.initializeApp({
+            credential: admin.credential.cert(firebaseConfig)
+        });
+    }
+    console.log('✅ Firebase initialized');
+} catch (error) {
+    console.error('❌ Firebase error:', error.message);
+}
 
+const db = admin.firestore();
+
+// ========================
+// Middleware
+// ========================
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// سجل البحث في الذاكرة
-let searchLogs = [];
-
-// دالة لجلب البيانات عبر الـ Proxy
-function fetchJSONviaProxy(apiUrl) {
-    return new Promise((resolve, reject) => {
-        const proxyFullUrl = `${PROXY_URL}${encodeURIComponent(apiUrl)}`;
-        
-        https.get(proxyFullUrl, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    const proxyResponse = JSON.parse(data);
-                    if (proxyResponse.contents) {
-                        const originalData = JSON.parse(proxyResponse.contents);
-                        resolve(originalData);
-                    } else {
-                        reject(new Error('Proxy response has no contents'));
-                    }
-                } catch(e) {
-                    reject(e);
-                }
-            });
-        }).on('error', reject);
+function verifyToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ success: false });
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, SECRET_KEY, (err, decoded) => {
+        if (err) return res.status(403).json({ success: false });
+        req.user = decoded;
+        next();
     });
 }
 
-// 🔍 البحث من الـ API (عبر Proxy)
+// ========================
+// الإعدادات الافتراضية
+// ========================
+const DEFAULT_SETTINGS = {
+    term: 'first',
+    mainSubjects: [
+        { name: "اللغة العربية", max: 40 },
+        { name: "اللغة الإنجليزية", max: 30 },
+        { name: "الجبر", max: 15 },
+        { name: "الهندسة", max: 15 },
+        { name: "العلوم", max: 20 },
+        { name: "الدراسات الاجتماعية", max: 20 },
+        { name: "فرانساوي", max: 10 }
+    ],
+    extraSubjects: [
+        { name: "التربية الدينية", max: 20 },
+        { name: "التربية الفنية", max: 10 },
+        { name: "الحاسب الآلي", max: 10 },
+        { name: "نشاط 2", max: 10 }
+    ]
+};
+
+async function getSettings() {
+    const doc = await db.collection('settings').doc('appSettings').get();
+    if (!doc.exists) {
+        await db.collection('settings').doc('appSettings').set(DEFAULT_SETTINGS);
+        return DEFAULT_SETTINGS;
+    }
+    return doc.data();
+}
+
+// ========================
+// API Routes
+// ========================
+
+// 🔍 البحث عن طالب
 app.get('/api/search', async (req, res) => {
     const seatNumber = req.query.seat;
-    
     if (!seatNumber) {
         return res.json({ success: false, message: '⚠️ من فضلك أدخل رقم الجلوس' });
     }
-    
+
     try {
-        const url = `${API_URL}?q=${seatNumber}&type=seat_number&page=1&per_page=20`;
-        console.log('جاري الاتصال عبر Proxy بـ:', url);
+        const studentDoc = await db.collection('students').doc(seatNumber).get();
         
-        // جلب البيانات عبر الـ Proxy
-        const data = await fetchJSONviaProxy(url);
-        
-        if (data.data && data.data.length > 0) {
-            const result = data.data[0];
-            
-            // تنسيق النتيجة
-            const formattedResult = `
-                <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; text-align: right;">
-                    <h3 style="color: #2e7d32; margin-bottom: 15px;">✅ نتيجة رقم الجلوس: ${result.seat_number}</h3>
-                    <hr style="margin: 10px 0;">
-                    <p><strong>👤 الاسم:</strong> ${result.student_name || 'غير متوفر'}</p>
-                    <p><strong>🏫 المدرسة:</strong> ${result.school || 'غير متوفر'}</p>
-                    <p><strong>📍 الإدارة التعليمية:</strong> ${result.administration || 'غير متوفر'}</p>
-                    <p><strong>📊 المجموع الكلي:</strong> <span style="font-size: 20px; color: #d32f2f; font-weight: bold;">${result.total_score || 0}</span></p>
-                    <p><strong>📅 الفصل الدراسي:</strong> ${result.term === 1 ? 'الأول' : result.term === 2 ? 'الثاني' : result.term || 'غير محدد'}</p>
-                </div>
-            `;
-            
-            searchLogs.unshift({ 
-                seat: seatNumber, 
-                found: true, 
-                student_name: result.student_name,
-                total_score: result.total_score,
-                time: Date.now() 
-            });
-            if (searchLogs.length > 100) searchLogs.pop();
-            
-            return res.json({ success: true, result: formattedResult });
-        } else {
-            searchLogs.unshift({ seat: seatNumber, found: false, time: Date.now() });
-            return res.json({ 
-                success: false, 
-                message: '❌ لا توجد نتيجة لهذا الرقم. تأكد من رقم الجلوس ثم حاول مرة أخرى.' 
-            });
+        if (!studentDoc.exists) {
+            return res.json({ success: false, message: '❌ لا توجد نتيجة لهذا الرقم' });
         }
         
+        const student = { id: studentDoc.id, ...studentDoc.data() };
+        const settings = await getSettings();
+        
+        // حساب المجموع من المواد الأساسية
+        let totalScore = 0;
+        for (const sub of settings.mainSubjects) {
+            totalScore += student.scores?.[sub.name] || 0;
+        }
+        
+        res.json({ success: true, student, settings, totalScore });
+        
     } catch (error) {
-        console.error('خطأ مفصل:', error.message);
-        return res.json({ 
-            success: false, 
-            message: '⚠️ حدث خطأ في الاتصال بخادم النتائج. يرجى المحاولة لاحقاً.' 
-        });
+        console.error(error);
+        res.json({ success: false, message: '⚠️ حدث خطأ' });
     }
+});
+
+// 📝 جلب كل الطلاب (للأدمن)
+app.get('/api/admin/students', verifyToken, async (req, res) => {
+    const snapshot = await db.collection('students').get();
+    const students = [];
+    snapshot.forEach(doc => {
+        students.push({ id: doc.id, ...doc.data() });
+    });
+    const settings = await getSettings();
+    res.json({ success: true, students, settings });
+});
+
+// ✏️ إضافة أو تعديل طالب
+app.post('/api/admin/save-student', verifyToken, async (req, res) => {
+    const { seat_number, student_name, school, administration, scores } = req.body;
+    
+    await db.collection('students').doc(seat_number).set({
+        seat_number,
+        student_name,
+        school,
+        administration,
+        scores,
+        updatedAt: Date.now()
+    }, { merge: true });
+    
+    res.json({ success: true });
+});
+
+// 🗑️ حذف طالب
+app.delete('/api/admin/delete-student/:seat', verifyToken, async (req, res) => {
+    const seat = req.params.seat;
+    await db.collection('students').doc(seat).delete();
+    res.json({ success: true });
+});
+
+// ⚙️ تحديث الإعدادات
+app.post('/api/admin/settings', verifyToken, async (req, res) => {
+    const { mainSubjects, extraSubjects, term } = req.body;
+    const settings = await getSettings();
+    if (mainSubjects) settings.mainSubjects = mainSubjects;
+    if (extraSubjects) settings.extraSubjects = extraSubjects;
+    if (term) settings.term = term;
+    await db.collection('settings').doc('appSettings').set(settings);
+    res.json({ success: true });
+});
+
+// 📊 إحصائيات
+app.get('/api/admin/stats', verifyToken, async (req, res) => {
+    const studentsSnapshot = await db.collection('students').get();
+    const totalStudents = studentsSnapshot.size;
+    
+    res.json({
+        totalStudents,
+        lastUpdated: Date.now()
+    });
 });
 
 // 🔐 تسجيل الدخول
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-    
     if (username === ADMIN_USER && password === ADMIN_PASS) {
         const token = jwt.sign({ username }, SECRET_KEY, { expiresIn: '24h' });
         res.json({ success: true, token });
@@ -117,42 +185,46 @@ app.post('/api/login', (req, res) => {
     }
 });
 
-// ✅ التحقق من صحة التوكن
-app.get('/api/verify-token', (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ success: false });
-    
-    const token = authHeader.split(' ')[1];
-    jwt.verify(token, SECRET_KEY, (err) => {
-        if (err) return res.status(403).json({ success: false });
-        res.json({ success: true });
-    });
+// ✅ التحقق من التوكن
+app.get('/api/verify-token', verifyToken, (req, res) => {
+    res.json({ success: true });
 });
 
-// 📊 إحصائيات لوحة التحكم
-app.get('/api/admin/stats', (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ success: false });
-    
-    const token = authHeader.split(' ')[1];
-    jwt.verify(token, SECRET_KEY, (err) => {
-        if (err) return res.status(403).json({ success: false });
-        
-        const totalSearches = searchLogs.length;
-        const successfulSearches = searchLogs.filter(log => log.found).length;
-        
-        res.json({ 
-            totalSearches,
-            successfulSearches,
-            successRate: totalSearches > 0 ? ((successfulSearches / totalSearches) * 100).toFixed(1) : 0,
-            logs: searchLogs.slice(0, 30) 
-        });
-    });
+// 🔔 تسجيل اشتراك إشعارات
+app.post('/api/subscribe', async (req, res) => {
+    const subscription = req.body;
+    await db.collection('subscribers').doc(subscription.endpoint).set(subscription);
+    res.json({ success: true });
 });
 
-// بدء الخادم
+// 🔔 إرسال إشعار للجميع
+app.post('/api/notify-all', verifyToken, async (req, res) => {
+    const { title, body, url } = req.body;
+    
+    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+        return res.json({ success: false, message: 'VAPID keys not configured' });
+    }
+    
+    webpush.setVapidDetails(
+        'mailto:admin@example.com',
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+    
+    const snapshot = await db.collection('subscribers').get();
+    const subscriptions = [];
+    snapshot.forEach(doc => subscriptions.push(doc.data()));
+    
+    const notifications = subscriptions.map(sub =>
+        webpush.sendNotification(sub, JSON.stringify({ title, body, url }))
+            .catch(e => console.log('Push error:', e.message))
+    );
+    
+    await Promise.all(notifications);
+    res.json({ success: true, count: subscriptions.length });
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📊 Admin login: ${ADMIN_USER} / ${ADMIN_PASS}`);
-    console.log(`🔗 Using Proxy for API: ${API_URL}`);
+    console.log(`📊 Admin: ${ADMIN_USER} / ${ADMIN_PASS}`);
 });
